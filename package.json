@@ -1,0 +1,24 @@
+{
+  "name": "jonggram",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/jonsoku/jonggram.git",
+  "author": "jonsoku <the2792@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@babel/core": "^7.4.5",
+    "@babel/node": "^7.4.5",
+    "@babel/preset-env": "^7.4.5",
+    "dotenv": "^8.0.0",
+    "graphql-tools": "^4.0.5",
+    "graphql-yoga": "^1.18.0",
+    "merge-graphql-schemas": "^1.5.8",
+    "morgan": "^1.9.1"
+  },
+  "devDependencies": {
+    "nodemon": "^1.19.1"
+  },
+  "scripts": {
+    "dev": "nodemon --exec babel-node src/server.js"
+  }
+}
