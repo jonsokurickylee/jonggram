@@ -135,7 +135,7 @@
 
   ![image-20190622063659088](/Users/jongseoklee/Library/Application Support/typora-user-images/image-20190622063659088.png)
 
--  [graphql]('http://localhost:4000') 에서 아래와 같은 코드로 결과값 확인
+- [graphql]('http://localhost:4000') 에서 아래와 같은 코드로 결과값 확인
 
   ```json
   {
@@ -288,4 +288,241 @@
 - graphql resolver를 만드는 방법이었다! 
 
 <hr/>
+
+## Setting Up Prisma
+
+### #2.0 Introduction to Prisma
+
+- what is the Prisma ?
+
+  - prisma is **ORM** : Object-relational mapping(객체 관계 연결)
+
+  - why do we need the **Prisma** ? 
+
+    - Prisma는 **DB** 관련 된 어려운 문제들을 해결해준다. 
+
+    - [Prisma H.P]('https://www.prisma.io/') join and Deploy a new Prisma service's Log into Prisma CLI
+
+      ```bash
+      $ npm install -g prisma
+      or
+      $ brew tap prisma/prisma
+      $ brew install prisma
+      $ prisma login -k eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjang2bzE3ODlya2JuMDg2MWZiamZpd2dnIiwiaWF0IjoxNTYxMTU2MTAwLCJleHAiOjE1NjM3NDgxMDB9.uac-4PQkQF5K1oY9ASfWgQxfhqjqV402C-cLCVx0Xr0
+      $ prisma init
+      	select Demo sever  MySQL database
+      	select leejongseok-b34ece/demo-us1 Hosted......
+      	service jonggram (enter)
+      	stage dev (enter)
+      	select Prisma JavaScript Client
+      $ prisma deploy
+      	generated폴더가 자동으로 생성될 것임
+      ```
+
+    - .gitignore
+
+      ```git
+      generated //추가
+      ```
+
+    - datamodel.prisma
+
+      ```prisma
+      // User : table명 (model name)
+      // id, name, lastName : column명 
+      type User {
+        id: ID! @id
+        name: String!
+        lastName: String!
+      }
+      ```
+
+### #2.1 Datamodel with Prisma
+
+- make a model on Prisma
+
+  - datamodel.prisma
+
+    ```prisma
+    type User {
+      id: ID! @id
+      username: String! @unique
+      email: String! @unique
+      firstName: String @default(value: "")
+      lastName: String
+      bio: String
+      following: [User!]! @relation(name: "FollowRelation")
+      followers: [User!]! @relation(name: "FollowRelation")
+      posts: [Post!]!
+      likes: [Like!]!
+      comments: [Comment!]!
+      rooms : [Room!]!
+    }
+    
+    type Post {
+      id: ID! @id
+      location: String
+      caption: String!
+      user: User!
+      files: [File!]!
+      likes: [Like!]!
+      comments: [Comment!]!
+    }
+    
+    type Like {
+      id: ID! @id
+      user: User!
+      post: Post!
+    }
+    
+    type Comment {
+      id: ID! @id
+      text: String!
+      user: User!
+      post: Post!
+    }
+    
+    type File {
+      id: ID! @id
+      url: String!
+      post: Post!
+    }
+    
+    type Room {
+      id: ID! @id
+      participants : [User!]!
+      messages: [Message!]!
+    }
+    
+    type Message {
+      id : ID! @id
+      text: String!
+      from : User! @relation(name: "From")
+      to: User! @relation(name: "To")
+      room: Room!
+    }
+    ```
+
+  ### #2.2 Testing Prisma OMG
+
+  - [query작성 playground]("https://us1.prisma.sh/leejongseok-b34ece/jonggram/dev")
+
+    - createUser
+
+      ```prisma
+      mutation {
+        createUser(data:{username:"jonsoku", email:"admin@gmail.com"}){
+          id
+        }
+      }
+      ```
+
+    - user
+
+      ```prisma
+      {
+        user(where:{id:"cjx70okh6a1u40b421zp9s2yg"}){
+          username
+        }
+      }
+      ```
+
+    - updateUser
+
+      ```prisma
+      mutation {
+        updateUser(data:{firstName:"aida", lastName:"kazuko"}where:{id:"cjx70okh6a1u40b421zp9s2yg"}){
+          username
+        }
+      }
+      ```
+
+    - updateUser
+
+      ```prisma
+      mutation {
+        updateUser(
+          data:{following:{connect:{id:"cjx70okh6a1u40b421zp9s2yg"}}}
+          where:{id:"cjx7100tba2uj0b420nqyjdnx"}
+        ){
+          username
+          firstName
+          lastName
+          following{
+            id
+          }
+          followers{
+            id
+          }
+        }
+      }
+      ```
+
+    - showUser
+
+      ```prisma
+      {
+        user(where:{id:"cjx70okh6a1u40b421zp9s2yg"}){
+          username
+          followers{
+            username
+            email
+          }
+          following{
+            username
+            email
+          }
+          lastName
+          firstName
+        }
+      }
+      ```
+
+  ### #2.3 Integrating Prisma in our Server
+
+  - 실제 api에서 Prisma를 사용하자
+
+  - package.json
+
+    ```json
+    "scripts": {
+        "dev": "nodemon --exec babel-node src/server.js",
+        "deploy": "prisma deploy",
+        "generate": "prisma generate",
+        "prisma": "yarn run deploy && yarn run generate"
+      }
+    ```
+
+  - yarn prisma
+
+    ```bash
+    $ yarn prisma
+    ```
+
+  - yarn add
+
+    ```bash
+    $ yarn add prisma-client-lib
+    ```
+
+  - src/api/Greetings/sayHello/sayHello.js
+
+    ```javascript
+    import { prisma } from '../../../../generated/prisma-client';
+    
+    export default {
+      Query: {
+        sayHello: async () => {
+          console.log(await prisma.users());
+          return 'HELLO';
+        }
+      }
+    };
+    ```
+
+  - prisma가 자동으로 client를 만들어주고, 이 client는 사용자 정보를 체크할 수 있다.
+
+  
+
+  
 
