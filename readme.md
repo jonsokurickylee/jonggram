@@ -522,7 +522,173 @@
 
   - prisma가 자동으로 client를 만들어주고, 이 client는 사용자 정보를 체크할 수 있다.
 
+### #2.4 Resolvers with Prisma
+
+- make a file (전에 만들었던 구조체를 복사)
+
+  ```bash
+  $ touch src/models.graphql
+  ```
+
+- src/models.graphql
+
+  ```graphql
+  type User {
+    id: ID!
+    username: String!
+    email: String!
+    firstName: String
+    lastName: String
+    bio: String
+    following: [User!]!
+    followers: [User!]!
+    posts: [Post!]!
+    likes: [Like!]!
+    comments: [Comment!]!
+    rooms: [Room!]!
+  }
   
+  type Post {
+    id: ID!
+    location: String
+    caption: String!
+    user: User!
+    files: [File!]!
+    likes: [Like!]!
+    comments: [Comment!]!
+  }
+  
+  type Like {
+    id: ID!
+    user: User!
+    post: Post!
+  }
+  
+  type Comment {
+    id: ID!
+    text: String!
+    user: User!
+    post: Post!
+  }
+  
+  type File {
+    id: ID!
+    url: String!
+    post: Post!
+  }
+  
+  type Room {
+    id: ID!
+    participants: [User!]!
+    messages: [Message!]!
+  }
+  
+  type Message {
+    id: ID!
+    text: String!
+    from: User!
+    to: User!
+    room: Room!
+  }
+  ```
+
+- 매번 prisma 파일을 graphql파일로 붙혀넣어야한다. 나중엔 자동변환되면 좋겠다. 
+
+  - graphql은 prisma문법을 이해하지 못하기 때문
+
+- src/api/Greetings 삭제
+
+- src/api
+
+  ```bash
+  $ cd ~/nomard/jonggram/src/api
+  $ mkdir -p User/{allUsers,userById}
+  $ touch User/userById/userById.graphql
+  $ touch User/userById/userById.js
+  $ touch User/allUsers/allUsers.graphql
+  $ touch User/allUsers/allUsers.js
+  ```
+
+- src/api/User/userById/userById.graphql
+
+  ```graphql
+  type Query {
+    userById(id: String!): User!
+  }
+  ```
+
+- src/api/User/userById/userById.js (resolver)
+
+  ```javascript
+  import { prisma } from '../../../../generated/prisma-client';
+  
+  export default {
+    Query: {
+      userById: async (_, args) => {
+        const { id } = args;
+        return await prisma.user({ id }).$fragment();
+      }
+    }
+  };
+  ```
+
+- src/api/User/allUsers/allUsers.graphql
+
+  ```graphql
+  type Query {
+    allUsers: [User!]!
+  }
+  ```
+
+- src/api/User/allUsers/allUsers.js (resolver)
+
+  ```javascript
+  import { prisma } from '../../../../generated/prisma-client';
+  
+  export default {
+    Query: {
+      allUsers: () => prisma.users()
+    }
+  };
+  ```
+
+- [playground]("http://localhost:4000 ")
+
+  ```json
+  {
+    allUsers{
+      id
+      firstName
+    }
+    userById(id:"cjx70mnu7oo600b12yoevhn1j"){
+      firstName
+    }
+  }
+  
+  ==========result==========
+  
+  {
+    "data": {
+      "allUsers": [
+        {
+          "id": "cjx70mnu7oo600b12yoevhn1j",
+          "firstName": ""
+        },
+        {
+          "id": "cjx70okh6a1u40b421zp9s2yg",
+          "firstName": "aida"
+        },
+        {
+          "id": "cjx7100tba2uj0b420nqyjdnx",
+          "firstName": ""
+        }
+      ],
+      "userById": {
+        "firstName": ""
+      }
+    }
+  }
+  ```
 
   
 
